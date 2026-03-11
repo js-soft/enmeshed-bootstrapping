@@ -97,6 +97,7 @@ do_uninstall() {
     "${ADB[@]}" uninstall "$PACKAGE" || log "App was not installed, nothing to uninstall"
 }
 
+# XXX: redundant
 cmd_wipe() {
     parse_device_opt wipe "$@"
     do_uninstall
