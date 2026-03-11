@@ -30,10 +30,10 @@ BASE_URL="${BASE_URL:-http://localhost:8090}"
 CLIENT_ID="${CLIENT_ID:-test}"
 CLIENT_SECRET="${CLIENT_SECRET:-test}"
 
-REPO_DIR="$SCRIPT_DIR/repos/nmshd_app"
+REPO_DIR="$SCRIPT_DIR/repos/nmshd_app_fork"
 APP_DIR="$REPO_DIR/apps/enmeshed"
 APK_PATH="$APP_DIR/build/app/outputs/flutter-apk/app-debug.apk"
-PACKAGE="eu.enmeshed.app"
+PACKAGE="eu.enmeshed.app.dev"
 
 log() { echo "-- $*"; }
 
@@ -55,7 +55,7 @@ cmd_clone() {
     mkdir -p "$SCRIPT_DIR/repos"
     if [[ ! -d "$REPO_DIR" ]]; then
         log "Cloning enmeshed app to '$REPO_DIR'"
-        git clone git@github.com:js-soft/nmshd_app.git "$REPO_DIR"
+        git clone git@github.com:js-soft/nmshd_app_fork.git "$REPO_DIR"
     else
         log "Found enmeshed app in '$REPO_DIR'"
     fi
@@ -73,18 +73,10 @@ cmd_build() {
 {
     "app_baseUrl": "$BASE_URL",
     "app_clientId": "$CLIENT_ID",
-    "app_clientSecret": "$CLIENT_SECRET"
+    "app_clientSecret": "$CLIENT_SECRET",
+    "app_autoCreateAccount": "Peter Leerzeichen"
 }
 EOF
-
-    log "Enabling cleartext traffic in debug manifest"
-    cat > "$APP_DIR/android/app/src/debug/AndroidManifest.xml" <<MANIFEST
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="eu.enmeshed.app">
-    <uses-permission android:name="android.permission.INTERNET" />
-    <application android:usesCleartextTraffic="true" />
-</manifest>
-MANIFEST
 
     log "Building debug APK"
     (cd "$APP_DIR" && flutter build apk --debug --dart-define-from-file=config.json)
@@ -115,6 +107,10 @@ cmd_install() {
 
     log "Installing APK via adb"
     "${ADB[@]}" install "$APK_PATH"
+
+    # set permissions
+    "${ADB[@]}" shell pm grant "$PACKAGE" android.permission.CAMERA
+    "${ADB[@]}" shell pm grant "$PACKAGE" android.permission.POST_NOTIFICATIONS
 
     log "Setting up adb reverse port forwarding (localhost:8090 -> host:8090)"
     "${ADB[@]}" reverse tcp:8090 tcp:8090
