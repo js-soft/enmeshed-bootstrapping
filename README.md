@@ -12,3 +12,6 @@ app_pid="$(adb shell pidof eu.enmeshed.app.dev)"
 adb logcat --pid="$app_pid" | grep '\[bootstrap\]'
 ```
 
+
+TODO
+- [ ] Push/SSE im lokalen Netzwerk
