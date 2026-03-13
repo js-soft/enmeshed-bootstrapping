@@ -1,8 +1,14 @@
-Tipps und Tricks
+# Ideen
+
+Socketverbindung zu App direkt aufbauen und so App fernsteuern. Keine Intents und URIs.
+
+# Tipps und Tricks
 
 - Android: HTTP-only Setting muss gesetzt sein: https://developer.android.com/guide/topics/manifest/application-element#usesCleartextTraffic
 
 Applogs ausgeben
+
+
 
 ```bash
 adb shell am start -a android.intent.action.VIEW \
@@ -16,9 +22,13 @@ adb logcat --pid="$app_pid" | grep '\[bootstrap\]'
 
 ## Interaktive LLM-Integration
 
-Bisher bietet die App keine Möglichkeit eines LLM als Chatbot. Wäre generell und für die Anwendungsfälle unten z.T. interessant.
+Bisher bietet die App keine Möglichkeit eines LLM als Chatbot. Wäre generell und für die Anwendungsfälle unten z.T. interessant. Reines Integrationsproblem.
 
-- Durchstich mit Ollama auf localhost
+### AS1 - Message- / Mailbasiert
+
+Automatische Beantwortung von Mails durch LLMs.
+
+Keine Änderung der App, Connector oder Backbone notwendig. Durchstich mit Ollama auf localhost.
 
 ## Bootstrapping von Demos auf Basis einer Vorlage
 
