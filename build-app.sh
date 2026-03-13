@@ -16,6 +16,7 @@
 # Environment overrides:
 #   BB_CONSUMER_API_BASE_URL  (default: http://localhost:8090)
 #   BB_SSE_BASE_URL           (default: http://localhost:8092)
+#   C2_URL                    (default: ws://localhost:9099)
 #   CLIENT_ID                 (default: test)
 #   CLIENT_SECRET             (default: test)
 
@@ -29,6 +30,7 @@ export PATH="$HOME/.pub-cache/bin:$PATH"
 # --- Config (override via env) ---
 BB_CONSUMER_API_BASE_URL="${BB_CONSUMER_API_BASE_URL:-http://localhost:8090}"
 BB_SSE_BASE_URL="${BB_SSE_BASE_URL:-http://localhost:8092}"
+C2_URL="${C2_URL:-ws://localhost:9099}"
 CLIENT_ID="${CLIENT_ID:-test}"
 CLIENT_SECRET="${CLIENT_SECRET:-test}"
 
@@ -75,6 +77,7 @@ cmd_build() {
 {
     "app_baseUrl": "$BB_CONSUMER_API_BASE_URL",
     "app_sseBaseUrl": "$BB_SSE_BASE_URL",
+    "app_c2Url": "$C2_URL",
     "app_clientId": "$CLIENT_ID",
     "app_clientSecret": "$CLIENT_SECRET",
     "app_autoCreateAccount": "Peter Leerzeichen"
@@ -118,6 +121,7 @@ cmd_install() {
     log "Setting up adb reverse port forwarding"
     "${ADB[@]}" reverse tcp:8090 tcp:8090
     "${ADB[@]}" reverse tcp:8092 tcp:8092
+    "${ADB[@]}" reverse tcp:9099 tcp:9099
 }
 
 cmd_run() {
@@ -159,6 +163,7 @@ case "$subcmd" in
         echo "Environment overrides:"
         echo "  BB_CONSUMER_API_BASE_URL=$BB_CONSUMER_API_BASE_URL"
         echo "  BB_SSE_BASE_URL=$BB_SSE_BASE_URL"
+        echo "  C2_URL=$C2_URL"
         echo "  CLIENT_ID=$CLIENT_ID"
         echo "  CLIENT_SECRET=$CLIENT_SECRET"
         exit 1
