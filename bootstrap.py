@@ -1,13 +1,13 @@
 # pyright: reportUnknownMemberType = false, reportMissingTypeStubs = false, reportExplicitAny = false, reportAny = false
 # assumes app is built and installed and the connector is running
 import json
-from threading import activeCount
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any, TypedDict
 
 from adbutils import adb
-from devtools import pformat, pprint
+from devtools import pprint
+from ollama import ChatResponse, chat
 
 from src import dev_app
 from src.connector_sdk import ConnectorSDK
@@ -55,7 +55,7 @@ while True:
 
 connector.post_message(
     app_account["address"],
-    f"Willkommen, {app_account["name"]}",
+    f"Willkommen, {app_account['name']}",
     "Herzlich willkommen.",
 )
 
@@ -65,6 +65,23 @@ _ = dev_app.c2_send(
         "path": f"/account/{app_account['id']}",
     }
 )
+
+
+def generate_reply(title: str, body: str) -> str:
+    response: ChatResponse = chat(
+        model="gemma3:4b",
+        messages=[
+            {
+                "role": "system",
+                "content": "Du bist ein ulkiger Quatschkopfagent. Antworte ulkig auf die Nutzeremail (bestehend aus Titel und Inhalt).",
+            },
+            {
+                "role": "user",
+                "content": f"Titel: {title}\nInhalt: {body}",
+            },
+        ],
+    )
+    return response["message"]["content"]
 
 
 def handle_webhook(data: dict[Any, Any]) -> Any:
@@ -87,10 +104,11 @@ def handle_webhook(data: dict[Any, Any]) -> Any:
 
     print("webhook msg", sender_addr, title, body)
 
+    reply = generate_reply(title, body)
     connector.post_message(
         sender_addr,
-        title,
-        f"echo: {body}",
+        f"re: {title}",
+        reply,
     )
 
     return {}

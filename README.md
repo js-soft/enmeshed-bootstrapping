@@ -1,24 +1,15 @@
-# Ideen
+# Demo / Anwendungsfall Kundenchatbot
 
-Socketverbindung zu App direkt aufbauen und so App fernsteuern. Keine Intents und URIs.
+- 1 docker-compose.yml für Infrastruktur
+- 1 Script zum Compilen und Installieren der App
+- 1 Script zum Clean-Starten der App auf Androiddevice
 
 # Tipps und Tricks
 
 - Android: HTTP-only Setting muss gesetzt sein: https://developer.android.com/guide/topics/manifest/application-element#usesCleartextTraffic
 
-Applogs ausgeben
 
-
-
-```bash
-adb shell am start -a android.intent.action.VIEW \
-	-d "enmeshed-dev://localhost/bootstrap?defaultProfileName=Peter+Langweilig&truncatedReference=" "eu.enmeshed.app.dev"
-
-app_pid="$(adb shell pidof eu.enmeshed.app.dev)"
-adb logcat --pid="$app_pid" | grep '\[bootstrap\]'
-```
-
-# Braindump Connector-Automatisierung
+# Braindump Use Cases Connector-Automatisierung
 
 ## Interaktive LLM-Integration
 
