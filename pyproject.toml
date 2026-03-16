@@ -1,0 +1,22 @@
+[project]
+name = "enmeshed-bootstrapping"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "adbutils>=2.12.0",
+    "websockets>=16.0",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.38.2",
+    "devtools>=0.12.2",
+    "httpx>=0.28.1",
+    "ipykernel>=7.2.0",
+    "pydantic>=2.12.5",
+]
+
+[tool.basedpyright]
+strict = ["**/*"]
