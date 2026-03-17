@@ -3,7 +3,12 @@ name = "enmeshed-bootstrapping"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
-dependencies = ["adbutils>=2.12.0", "ollama>=0.6.1", "websockets>=16.0"]
+dependencies = [
+    "adbutils>=2.12.0",
+    "click>=8.3.1",
+    "ollama>=0.6.1",
+    "websockets>=16.0",
+]
 
 [dependency-groups]
 dev = [

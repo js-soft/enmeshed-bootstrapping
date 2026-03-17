@@ -5,7 +5,7 @@ import json
 from adbutils import AdbDevice
 from websockets.sync.server import Server, ServerConnection, serve
 
-from . import lib
+from . import adb_lib
 
 APP_ID = "eu.enmeshed.app.dev"
 APP_REQUESTED_PERMISSIONS = [
@@ -15,13 +15,26 @@ APP_REQUESTED_PERMISSIONS = [
 C2_WS = {"host": "localhost", "port": 9099}
 
 
-def run_clean(device: AdbDevice):
-    lib.reverse_port_fwd(device, "tcp:8090", "tcp:8090")
-    lib.reverse_port_fwd(device, "tcp:8092", "tcp:8092")
-    lib.reverse_port_fwd(device, "tcp:9099", "tcp:9099")
-    lib.wipe_app_cache(device, APP_ID)
-    lib.grant_app_permissions(device, APP_ID, APP_REQUESTED_PERMISSIONS)
-    lib.start_app(device, APP_ID, ".MainActivity")
+def wipe_cache(device: AdbDevice) -> None:
+    adb_lib.wipe_app_cache(device, APP_ID)
+
+
+def prepare_device(device: AdbDevice) -> None:
+    adb_lib.reverse_port_fwd(device, "tcp:8090", "tcp:8090")
+    adb_lib.reverse_port_fwd(device, "tcp:8092", "tcp:8092")
+    adb_lib.reverse_port_fwd(device, "tcp:9099", "tcp:9099")
+    adb_lib.grant_app_permissions(device, APP_ID, APP_REQUESTED_PERMISSIONS)
+
+
+def start(
+    device: AdbDevice,
+    *,
+    wipe: bool = True,
+):
+    if wipe:
+        wipe_cache(device)
+    prepare_device(device)
+    adb_lib.start_app(device, APP_ID, ".MainActivity")
 
 
 def c2_send(data: dict[object, object]) -> dict[object, object]:

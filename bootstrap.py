@@ -24,7 +24,7 @@ CONNECTOR_API_KEY = "This_is_a_test_APIKEY_with_30_chars+"
 
 connector = ConnectorSDK(base_url=CONNECTOR_BASE_URL, api_key=CONNECTOR_API_KEY)
 d = adb.device()
-dev_app.run_clean(d)
+dev_app.start(d)
 
 app_account: LocalAccountDTO = dev_app.c2_send(  # pyright: ignore[reportAssignmentType]
     {

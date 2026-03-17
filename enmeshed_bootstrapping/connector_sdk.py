@@ -62,26 +62,17 @@ class ConnectorSDK:
         _ = resp.raise_for_status()
         return GetHealthResponse.model_validate(resp.json())
 
-    def post_own_rlt(self) -> PostOwnRLTResponse:
+    def post_own_rlt(
+        self,
+        content: dict[str, object],
+        max_num_allocs: int,
+        expires_at: datetime,
+    ) -> PostOwnRLTResponse:
         path = "/api/core/v1/RelationshipTemplates/Own"
         json = {
-            "maxNumberOfAllocations": 100,
-            "expiresAt": "2029-01-01T00:00:00.000Z",
-            "content": {
-                "@type": "RelationshipTemplateContent",
-                "title": "Huhu =)",
-                "onNewRelationship": {
-                    "@type": "Request",
-                    "items": [
-                        {
-                            "@type": "ConsentRequestItem",
-                            "consent": "...",
-                            "requiresInteraction": False,
-                            "mustBeAccepted": False,
-                        }
-                    ],
-                },
-            },
+            "maxNumberOfAllocations": max_num_allocs,
+            "expiresAt": expires_at.isoformat(timespec="milliseconds"),
+            "content": content,
         }
         resp = self._send("POST", path, json=json)  # pyright: ignore[reportArgumentType]
         _ = resp.raise_for_status()
