@@ -8,8 +8,8 @@ from websockets.server import ServerProtocol
 from websockets.sync.server import ServerConnection
 
 # As Host: C2 Server
-C2_SERVER_HOSTNAME = "localhost"
-C2_SERVER_PORT = 9099
+_C2_SERVER_HOSTNAME = "localhost"
+_C2_SERVER_PORT = 9099
 
 
 class RCPResponseOk(TypedDict):
@@ -56,8 +56,8 @@ class C2Server:
 
     def __init__(
         self,
-        ws_server_hostname: str = C2_SERVER_HOSTNAME,
-        ws_server_port: int = C2_SERVER_PORT,
+        ws_server_hostname: str = _C2_SERVER_HOSTNAME,
+        ws_server_port: int = _C2_SERVER_PORT,
     ) -> None:
         self.miso = queue.Queue()
         self.mosi = queue.Queue()
