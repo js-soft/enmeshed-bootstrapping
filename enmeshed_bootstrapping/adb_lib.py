@@ -53,3 +53,15 @@ def reverse_port_fwd(
     host_port: str,
 ) -> None:
     device.reverse(device_port, host_port)
+
+
+def uninstall_app(device: AdbDevice, package: str) -> None:
+    """Uninstall an app. No-op if not installed."""
+    result = device.shell(["pm", "list", "packages", package])
+    if package in result:
+        _ = device.shell(["pm", "uninstall", package])
+
+
+def install_app(device: AdbDevice, apk_path: str) -> None:
+    """Install an APK from a local file path."""
+    device.install(apk_path)
