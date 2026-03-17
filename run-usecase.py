@@ -32,7 +32,7 @@ def cli():
 @click.option("--no-wipe", is_flag=True, help="Skip wiping app cache")
 def start(device: str | None, no_wipe: bool) -> None:
     android_device = adb.device(device)
-    dev_app.start(android_device, wipe_cache=not no_wipe)
+    dev_app.start(android_device, wipe=not no_wipe)
 
 
 @cli.command()
