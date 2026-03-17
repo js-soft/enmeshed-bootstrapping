@@ -18,8 +18,6 @@ OLLAMA_HOST = os.environ["OLLAMA_HOST"]  # e.g. http://localhost:5512
 connector = ConnectorSDK(CONNECTOR_BASE_URL, CONNECTOR_API_KEY)
 ollama_client = Client(host=OLLAMA_HOST)
 
-# XXX: assert ollama server is running
-
 
 def generate_reply(title: str, body: str) -> str:
     response: ChatResponse = ollama_client.chat(
