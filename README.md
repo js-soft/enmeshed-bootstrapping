@@ -1,10 +1,11 @@
 # Demo / Anwendungsfall Kundenchatbot
 
 ```bash
-docker compose up -d  # Infrastruktur starten
-./build-app.sh        # App kompilieren
-./install-app.sh      # App auf Device installieren
-./run-usecase.sh      # App und Connector Bootstrap
+uv sync                  # Bootstrap Repo
+docker compose up -d     # Infrastruktur starten
+./demo.py build-app      # App kompilieren
+./demo.py install-app    # App auf Device installieren
+./demo.py bootstrap-demo # App und Connector Bootstrap
 ```
 
 # Tipps und Tricks
