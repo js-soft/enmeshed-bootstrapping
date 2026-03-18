@@ -1,11 +1,9 @@
 # Demo / Anwendungsfall Kundenchatbot
 
 ```bash
-uv sync                  # Bootstrap Repo
-docker compose up -d     # Infrastruktur starten
-./demo.py build-app      # App kompilieren
-./demo.py install-app    # App auf Device installieren
-./demo.py bootstrap-demo # App und Connector Bootstrap
+uv sync              # Bootstrap Repo
+docker compose up -d # Infrastruktur starten
+./demo --help        # RTFM
 ```
 
 # Tipps und Tricks

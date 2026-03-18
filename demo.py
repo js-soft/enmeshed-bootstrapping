@@ -6,7 +6,7 @@ import click
 import ollama
 
 from enmeshed_bootstrapping import dev_app
-from enmeshed_bootstrapping.agents import auto_responder
+from enmeshed_bootstrapping.agents import auto_responder, lsf_agent
 from enmeshed_bootstrapping.c2_server import C2Server
 from enmeshed_bootstrapping.connector_sdk import ConnectorSDK
 from enmeshed_bootstrapping.flows import bootstrap
@@ -48,21 +48,37 @@ def start_app(device: str | None = None):
 
 
 @cli.command()
-@click.argument("demo", type=click.Choice(["auto-respond"]))
+@click.argument("demo", type=click.Choice(["auto-respond", "lsf"]))
 @click.option("--device", default=None, help="ADB device serial")
-def run(demo: str, device: str | None = None) -> None:
+@click.option("--ollama-host", default=None, help="OLLAMA_HOST")
+@click.option(
+    "--skip-bootstrap", is_flag=True, default=False, help="Skip the bootstrap flow"
+)
+def run(
+    demo: str,
+    device: str | None = None,
+    ollama_host: str | None = None,
+    skip_bootstrap: bool = False,
+) -> None:
     """Run a particular demo."""
+    c2 = C2Server()
+    connector = ConnectorSDK()
+    ollama_client = ollama.Client(host=ollama_host)
+
+    if not skip_bootstrap:
+        click.echo("running bootstrap...")
+        bootstrap.bootstrap(c2, connector, device_serial=device)
+
     match demo:
         case "auto-respond":
-            c2 = C2Server()
-            connector = ConnectorSDK()
-            ollama_client = ollama.Client()
-
-            click.echo("running bootstrap...")
-            bootstrap.bootstrap(c2, connector, device_serial=device)
-
             click.echo("starting auto responder agent...")
             handlerfn = auto_responder.make_handlerfn(connector, ollama_client)
+            webhook_srv = WebhookServer(handlerfn, hostname="0.0.0.0")
+            webhook_srv.serve_forever()
+
+        case "lsf":
+            click.echo("starting lsf agent...")
+            handlerfn = lsf_agent.make_handlerfn(connector, ollama_client)
             webhook_srv = WebhookServer(handlerfn, hostname="0.0.0.0")
             webhook_srv.serve_forever()
 

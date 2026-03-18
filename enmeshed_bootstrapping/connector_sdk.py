@@ -46,6 +46,36 @@ class GetRelationshipsResponse(BaseModel):
     result: list[GetRelationshipsResponse_result]
 
 
+class PostOwnFileResponse_result_reference(BaseModel):
+    truncated: str
+    url: str
+
+
+class PostOwnFileResponse_result(BaseModel):
+    id: str
+    isOwn: bool
+    filename: str
+    filesize: int
+    createdAt: datetime
+    createdBy: str
+    createdByDevice: str
+    expiresAt: datetime
+    mimetype: str
+    title: str
+    description: str
+    owner: str
+    ownershipToken: str
+    reference: PostOwnFileResponse_result_reference
+
+
+class PostOwnFileResponse(BaseModel):
+    result: PostOwnFileResponse_result
+
+
+class GetOwnFileResponse(BaseModel):
+    pass
+
+
 class ConnectorSDK:
     _http: httpx.Client
 
@@ -87,7 +117,11 @@ class ConnectorSDK:
         recipient_addr: str,
         title: str,
         body: str,
+        attachments: list[str] | None = None,
     ) -> None:
+        if attachments is None:
+            attachments = []
+
         path = "/api/core/v1/Messages"
         data = {
             "recipients": [recipient_addr],
@@ -98,6 +132,7 @@ class ConnectorSDK:
                 "body": body,
                 "bodyFormat": "PlainText",
             },
+            "attachments": attachments,
         }
         resp = self._send("POST", path, json=data)  # pyright: ignore[reportArgumentType]
         _ = resp.raise_for_status()
@@ -120,11 +155,33 @@ class ConnectorSDK:
         _ = resp.raise_for_status()
         return GetRelationshipsResponse.model_validate(resp.json())
 
+    def post_own_file(
+        self,
+        title: str,
+        description: str,
+        data: bytes,
+        filename: str,
+        mimetype: str,
+    ) -> PostOwnFileResponse:
+        path = "/api/core/v1/Files/Own"
+        resp = self._send(
+            "POST",
+            path,
+            data={"title": title, "description": description},
+            files={"file": (filename, data, mimetype)},
+        )
+        _ = resp.raise_for_status()
+        return PostOwnFileResponse.model_validate(resp.json())
+
     def _send(
         self,
         method: str,
         path: str,
         json: dict[object, object] | None = None,
         params: dict[str, str] | None = None,
+        data: dict[str, str] | None = None,
+        files: dict[str, tuple[str, bytes, str]] | None = None,
     ) -> httpx.Response:
-        return self._http.request(method, path, json=json, params=params)
+        return self._http.request(
+            method, path, json=json, params=params, data=data, files=files
+        )
