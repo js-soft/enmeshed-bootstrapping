@@ -33,10 +33,6 @@ Du verfügst über folgende Tools:
 - Wenn kein Tool zum Anliegen passt oder du die Anfrage nicht bearbeiten kannst, nutze `antworten`, um höflich mitzuteilen, dass du die Anfrage nicht verarbeiten kannst.
 - Erfinde keine Informationen. Nutze ausschließlich die Daten, die dir über Tools zur Verfügung stehen."""
 
-# Usecases
-# --------
-# - matrikelnummer veregessen
-
 # XXX: Dateien beim bootstrap hochladen (abstraktion umbauen, Agent braucht eigenes bootstrap)
 
 
