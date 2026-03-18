@@ -1,8 +1,9 @@
+# pyright: reportExplicitAny = false
 from datetime import datetime
 from typing import Any
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # As Host: Connector API
 _CONNECTOR_BASE_URL = "http://localhost:3000"
@@ -25,7 +26,7 @@ class PostOwnRLTResponse_result(BaseModel):
     createdBy: str
     createdByDevice: str
     createdAt: datetime
-    content: dict[str, Any]  # pyright: ignore[reportExplicitAny]
+    content: dict[str, Any]
     expiresAt: datetime
     maxNumberOfAllocations: int
     reference: PostOwnRLTResponse_result_reference
@@ -72,8 +73,30 @@ class PostOwnFileResponse(BaseModel):
     result: PostOwnFileResponse_result
 
 
-class GetOwnFileResponse(BaseModel):
-    pass
+class PostRequestsOutgoingResponse_result_content_item(BaseModel):
+    type: str = Field(alias="@type")
+    consent: str
+    link: str
+    mustBeAccepted: bool
+
+
+class PostRequestsOutgoingResponse_result_content(BaseModel):
+    type: str = Field(alias="@type")
+    id: str
+    items: list[PostRequestsOutgoingResponse_result_content_item]
+
+
+class PostRequestsOutgoingResponse_result(BaseModel):
+    id: str
+    isOwn: bool
+    peer: str
+    createdAt: datetime
+    content: PostRequestsOutgoingResponse_result_content
+    status: str
+
+
+class PostRequestsOutgoingResponse(BaseModel):
+    result: PostRequestsOutgoingResponse_result
 
 
 class ConnectorSDK:
@@ -112,7 +135,7 @@ class ConnectorSDK:
         _ = resp.raise_for_status()
         return PostOwnRLTResponse.model_validate(resp.json())
 
-    def post_message(
+    def post_mail_message(
         self,
         recipient_addr: str,
         title: str,
@@ -122,7 +145,6 @@ class ConnectorSDK:
         if attachments is None:
             attachments = []
 
-        path = "/api/core/v1/Messages"
         data = {
             "recipients": [recipient_addr],
             "content": {
@@ -134,7 +156,14 @@ class ConnectorSDK:
             },
             "attachments": attachments,
         }
-        resp = self._send("POST", path, json=data)  # pyright: ignore[reportArgumentType]
+        return self.post_message(data)
+
+    def post_message(
+        self,
+        payload: dict[str, Any],
+    ) -> None:
+        path = "/api/core/v1/Messages"
+        resp = self._send("POST", path, json=payload)
         _ = resp.raise_for_status()
         return None
 
@@ -173,11 +202,24 @@ class ConnectorSDK:
         _ = resp.raise_for_status()
         return PostOwnFileResponse.model_validate(resp.json())
 
+    def post_requests_outgoing(
+        self,
+        payload: dict[str, object],
+    ) -> PostRequestsOutgoingResponse:
+        path = "/api/core/v1/Requests/Outgoing"
+        resp = self._send(
+            "POST",
+            path,
+            json=payload,
+        )
+        _ = resp.raise_for_status()
+        return PostRequestsOutgoingResponse.model_validate(resp.json())
+
     def _send(
         self,
         method: str,
         path: str,
-        json: dict[object, object] | None = None,
+        json: dict[str, Any] | None = None,  # XXX: remove json or data
         params: dict[str, str] | None = None,
         data: dict[str, str] | None = None,
         files: dict[str, tuple[str, bytes, str]] | None = None,

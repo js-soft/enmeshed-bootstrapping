@@ -2,9 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import ollama
+from ollama import Message
 
 from enmeshed_bootstrapping.connector_sdk import ConnectorSDK
 from enmeshed_bootstrapping.webhook_server import HandlerFn
@@ -15,12 +16,15 @@ _SYSTEM_PROMPT = """Du bist ein LSF-Agent innerhalb einer Universitätsverwaltun
 
 Du verfügst über folgende Tools:
 - `durchsuche_studenten_daten`: Sucht Dokumente (Immatrikulationsbescheid, Notenspiegel) im LSF-Verzeichnis des Studierenden und gibt eine Dateireferenz zurück.
+- `liste_besuchter_vorlesungen`: Liefert die Liste der Vorlesungen, für die der Studierende angemeldet ist.
+- `pruefungsvorausetzungen_erfuellt`: Prüft, ob der Studierende die Voraussetzungen für die Prüfung einer bestimmten Vorlesung erfüllt.
+- `anfrage_pruefungsanmeldung`: Verschickt eine Prüfungsanmeldungsanfrage an den Studierenden über einen separaten Kanal.
 - `antworten`: Sendet eine Antwort an den Studierenden. Kann Dateireferenzen als Anhänge enthalten.
 
 # Ablauf
 
 1. Du erhältst eine Nachricht eines Studierenden (Betreff + Inhalt).
-2. Analysiere das Anliegen. Nutze `durchsuche_studenten_daten`, um benötigte Dokumente zu beschaffen.
+2. Analysiere das Anliegen. Nutze die verfügbaren Tools, um benötigte Informationen und Dokumente zu beschaffen.
 3. Stelle sicher, dass du alle nötigen Informationen gesammelt hast, bevor du antwortest. Rufe bei Bedarf mehrere Tools nacheinander auf.
 4. Sobald du alle Informationen besitzt, beantworte die Anfrage abschließend mit dem `antworten`-Tool. Jede Konversation muss mit einem `antworten`-Aufruf enden.
 
@@ -31,12 +35,9 @@ Du verfügst über folgende Tools:
 
 # Usecases
 # --------
-# - Transcript schicken
-# - aktuelle Imma
 # - matrikelnummer veregessen
-# - anmeldung Prüfung
 
-# XXX: Dateien beim bootstrap hochladen
+# XXX: Dateien beim bootstrap hochladen (abstraktion umbauen, Agent braucht eigenes bootstrap)
 
 
 def make_handlerfn(
@@ -62,25 +63,25 @@ def make_handlerfn(
         title = cast(str, content["subject"])
         body = cast(str, content["body"])
 
-        messages = [
-            {
-                "role": "system",
-                "content": _SYSTEM_PROMPT,
-            },
-            {
-                "role": "user",
-                "content": f"Betreff: {title}\nInhalt: {body}",
-            },
+        messages: list[Message] = [
+            Message(role="system", content=_SYSTEM_PROMPT),
+            Message(role="user", content=f"Betreff: {title}\nInhalt: {body}"),
         ]
         while True:
             response: ollama.ChatResponse = ollama_client.chat(
                 model="glm-4.7-flash:q4_K_M",
                 messages=messages,
-                tools=[durchsuche_studenten_daten, antworten],
+                tools=[
+                    durchsuche_studenten_daten,
+                    liste_besuchter_vorlesungen,
+                    pruefungsvoraussetzungen_erfuellt,
+                    anfrage_pruefungsanmeldung,
+                    antworten,
+                ],
                 think=True,
             )
 
-            messages.append(response.message.model_dump())
+            messages.append(response.message)
             if response.message.tool_calls:
                 for call in response.message.tool_calls:
                     match call.function.name:
@@ -90,11 +91,71 @@ def make_handlerfn(
                             ] = call.function.arguments["typ"]
                             fileref = durchsuche_studenten_daten(doc_type)
                             messages.append(
+                                Message(
+                                    role="tool",
+                                    tool_name=call.function.name,
+                                    content=fileref,
+                                )
+                            )
+                        case "anfrage_pruefungsanmeldung":
+                            vorlesung = call.function.arguments["vorlesung"]
+                            request_items = [
                                 {
-                                    "role": "tool",
-                                    "tool_name": call.function.name,
-                                    "content": str(fileref),
+                                    "@type": "ConsentRequestItem",
+                                    "mustBeAccepted": False,
+                                    "consent": f"Ich trete hiermit verpflichtend zur Prüfung der Vorlesung '{vorlesung}' bei",
+                                    "link": "https://www.uni-heidelberg.de/de/forschung",
                                 }
+                            ]
+                            resp = connector.post_requests_outgoing(
+                                payload={
+                                    "content": {
+                                        "items": request_items,
+                                    },
+                                    "peer": sender_addr,
+                                }
+                            )
+                            request_id = resp.result.id
+
+                            msg_payload = {
+                                "recipients": [
+                                    sender_addr,
+                                ],
+                                "content": {
+                                    "@type": "Request",
+                                    "id": request_id,
+                                    "items": request_items,
+                                },
+                            }
+                            connector.post_message(msg_payload)
+
+                            messages.append(
+                                Message(
+                                    role="tool",
+                                    tool_name=call.function.name,
+                                    content=None,
+                                )
+                            )
+
+                        case "pruefungsvoraussetzungen_erfuellt":
+                            vorlesung = call.function.arguments["vorlesung"]
+                            result = str(pruefungsvoraussetzungen_erfuellt(vorlesung))
+                            messages.append(
+                                Message(
+                                    role="tool",
+                                    tool_name=call.function.name,
+                                    content=result,
+                                )
+                            )
+
+                        case "liste_besuchter_vorlesungen":
+                            vorlesungen = liste_besuchter_vorlesungen()
+                            messages.append(
+                                Message(
+                                    role="tool",
+                                    tool_name=call.function.name,
+                                    content=str(vorlesungen),
+                                )
                             )
 
                         case "antworten":
@@ -105,7 +166,7 @@ def make_handlerfn(
                             agent_response_filerefs: list[str] = (
                                 call.function.arguments["dateireferenzen"]
                             )
-                            connector.post_message(
+                            connector.post_mail_message(
                                 sender_addr,
                                 title=agent_response_title,
                                 body=agent_response_body,
@@ -117,7 +178,9 @@ def make_handlerfn(
                 else:
                     continue
                 break
-        msgs = json.dumps(messages, ensure_ascii=False, indent=2)
+        msgs = json.dumps(
+            [m.model_dump() for m in messages], ensure_ascii=False, indent=2
+        )
         _ = Path("messages.json").write_text(msgs)
         return {}
 
@@ -151,3 +214,34 @@ def antworten(
     dateireferenzen: Liste von Dateireferenzen (z.B. ["FIL441idofj31", "FILdeadbeef13"]), deren Dateien als Anhänge verschickt werden sollen. None, wenn keine Anhänge benötigt werden.
     """
     pass
+
+
+_VORLESUNGEN = [
+    "Experimentalphysik I",
+    "Experimentalphysik II",
+    "Computerlinguistik I",
+    "Compilerbau",
+    "Elektronik",
+    "Einführung in die Wissenschaftsphilosophie",
+]
+
+
+def liste_besuchter_vorlesungen() -> list[str]:
+    """Liefert die Liste der Vorlesungen, für die der Studierende angemeldet ist und eine Prüfung ablegen darf."""
+    return _VORLESUNGEN
+
+
+def pruefungsvoraussetzungen_erfuellt(vorlesung: str) -> bool:
+    """Prüft, ob der Studierende die Voraussetzungen erfüllt, um an der Prüfung einer bestimmten Vorlesung teilzunehmen.
+
+    vorlesung: Name der Vorlesung, z.B. "Experimentalphysik I"
+    """
+    besucht_vorlesung = vorlesung in _VORLESUNGEN
+    return besucht_vorlesung
+
+
+def anfrage_pruefungsanmeldung(vorlesung: str) -> None:
+    """Verschickt eine Anfrage zur Prüfungsanmeldung an den Studierenden. Die Anfrage wird über einen separaten Kanal außerhalb der Konversation zugestellt.
+
+    vorlesung: Name der Vorlesung, für die die Prüfungsanmeldung angefragt werden soll
+    """

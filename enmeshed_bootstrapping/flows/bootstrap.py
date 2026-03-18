@@ -65,7 +65,7 @@ def bootstrap(
             break
         time.sleep(0.5)
 
-    connector.post_message(
+    connector.post_mail_message(
         app_account["address"],
         f"Willkommen, {app_account['name']}",
         "Herzlich willkommen.",

@@ -42,7 +42,7 @@ def make_handlerfn(
             ],
         )
         reply = response["message"]["content"]
-        connector.post_message(
+        connector.post_mail_message(
             sender_addr,
             f"re: {title}",
             reply,
