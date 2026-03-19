@@ -12,6 +12,8 @@ from enmeshed_bootstrapping.connector_sdk import ConnectorSDK
 from enmeshed_bootstrapping.flows import bootstrap
 from enmeshed_bootstrapping.ollama_client import OllamaClient
 
+_OLLAMA_DEFAULT_MODEL = "glm-4.7-flash:q4_K_M"
+
 
 class LocalAccountDTO(TypedDict):
     id: str
@@ -50,7 +52,10 @@ def start_app(device: str | None = None):
 @cli.command()
 @click.argument("demo", type=click.Choice(["auto-respond", "lsf"]))
 @click.option("--device", default=None, help="ADB device serial")
-@click.option("--ollama-host", default=None, help="OLLAMA_HOST")
+@click.option(
+    "--ollama-host", default=None, help="Ollama Host (e.g. http://localhost:11434)"
+)
+@click.option("--ollama-model", default=_OLLAMA_DEFAULT_MODEL, help="ollama model")
 @click.option(
     "--skip-bootstrap", is_flag=True, default=False, help="Skip the bootstrap flow"
 )
@@ -58,16 +63,15 @@ def run(
     demo: str,
     device: str | None = None,
     ollama_host: str | None = None,
+    ollama_model: str | None = None,
     skip_bootstrap: bool = False,
 ) -> None:
     """Run a particular demo."""
     c2 = C2Server()
     connector = ConnectorSDK()
-    ollama_client = OllamaClient(
-        model="glm-4.7-flash:q4_K_M",
-        think=True,
-        ollama_host=ollama_host,
-    )
+    if ollama_model is None:
+        ollama_model = _OLLAMA_DEFAULT_MODEL
+    ollama_client = OllamaClient(model=ollama_model, ollama_host=ollama_host)
 
     if not skip_bootstrap:
         click.echo("running bootstrap...")

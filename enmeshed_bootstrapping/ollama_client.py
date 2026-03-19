@@ -1,6 +1,7 @@
 # pyright: reportUnknownMemberType = false, reportAny = false, reportExplicitAny = false
 
 from collections.abc import Callable, Mapping, Sequence
+from functools import lru_cache
 from typing import Any
 
 import ollama
@@ -9,19 +10,24 @@ from ollama import ChatResponse, Message, Tool
 
 class OllamaClient:
     """Ollama wrapper with fixed model and think settings."""
+
     _model: str
-    _think: bool
     _client: ollama.Client
 
     def __init__(
         self,
         model: str,
-        think: bool,
         ollama_host: str | None = None,
     ) -> None:
         self._model = model
-        self._think = think
         self._client = ollama.Client(host=ollama_host)
+
+    @lru_cache(maxsize=1)
+    def _is_thinking_model(self) -> bool:
+        capabilities = self._client.show(self._model).capabilities
+        if capabilities is None:
+            return False
+        return "thinking" in capabilities
 
     def chat(
         self,
@@ -33,5 +39,5 @@ class OllamaClient:
             model=self._model,
             messages=messages,
             tools=tools,
-            think=self._think,
+            think=self._is_thinking_model(),
         )
