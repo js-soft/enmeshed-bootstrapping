@@ -81,7 +81,7 @@
         </mxCell>
         <mxCell id="BXDKF3MP9XbFqqGr8OxJ-16" connectable="0" parent="BXDKF3MP9XbFqqGr8OxJ-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;" value="*consumption.messageProcessed*" vertex="1">
           <mxGeometry relative="1" x="-0.1517" as="geometry">
-            <mxPoint y="23" as="offset" />
+            <mxPoint x="34" y="-63" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="BXDKF3MP9XbFqqGr8OxJ-26" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.database;whiteSpace=wrap;" value="System B" vertex="1">
